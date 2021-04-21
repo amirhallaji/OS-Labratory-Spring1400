@@ -13,6 +13,20 @@
 s_block_ptr HeadPtr=NULL;
 uint8_t *BrkPtr=NULL;
 uint8_t *stack;
+
+void *sbrk (size_t size) {
+    if (size == 0) {
+        return (void *) BrkPtr ;
+    }
+    void * free = ( void *) BrkPtr ;
+    BrkPtr += size;
+	/* Commented this line because we didn't implemented MAX_HEAP */
+    // if (BrkPtr >= endp) {
+    //     return NULL;
+    // }
+    return free;
+}
+
 s_block_ptr extend_heap (s_block_ptr last , size_t s){
 	void* p=sbrk(s+sizeof(s_block));
 

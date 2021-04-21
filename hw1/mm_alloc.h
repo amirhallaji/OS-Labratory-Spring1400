@@ -20,6 +20,9 @@ void mm_free(void *ptr);
 
 //TODO: Add any implementation details you might need to this file
 
+/* When requested, icreament the brkp pointer and return a pointer to the start of the allocated block */
+void *sbrk (size_t size);
+
 typedef struct s_block *s_block_ptr;
 extern s_block_ptr HeadPtr;
 
