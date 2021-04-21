@@ -23,7 +23,7 @@
 
 // For heap
 s_block_ptr HeadPtr=NULL;
-void *BrkPtr=NULL;
+uint8_t *BrkPtr=NULL;
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -478,8 +478,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   // Initiallization of Heap
   t->heap = &t->magic + sizeof(unsigned);
-  HeadPtr = t->heap;
-  BrkPtr = &t->heap;
+  BrkPtr = t->heap;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -492,7 +491,7 @@ alloc_frame (struct thread *t, size_t size)
   ASSERT (size % sizeof (uint32_t) == 0);
 
   // Check new stack pointer conflict with heap
-  ASSERT (((t->stack - size) - t->heap) > 0);
+  ASSERT (t->stack- BrkPtr > 0);
 
   t->stack -= size;
   return t->stack;

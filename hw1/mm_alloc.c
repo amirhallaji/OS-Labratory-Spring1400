@@ -8,15 +8,16 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 s_block_ptr HeadPtr=NULL;
-void *BrkPtr=NULL;
-
+uint8_t *BrkPtr=NULL;
+uint8_t *stack;
 s_block_ptr extend_heap (s_block_ptr last , size_t s){
 	void* p=sbrk(s+sizeof(s_block));
 
 	// Check new Brk pointer conflict with stack
-	if ((BrkPtr - HeadPtr) < 0){
+	if ((BrkPtr - stack) < 0){
 		p = (void *) HeadPtr;
 	} else {
 		p = (void *) -1;
@@ -27,7 +28,6 @@ s_block_ptr extend_heap (s_block_ptr last , size_t s){
 		s_block_ptr newBlock = (s_block_ptr) p;
 		if(last){
 			last->next=newBlock;
-			
 		}else{
 			HeadPtr=newBlock;
 		}

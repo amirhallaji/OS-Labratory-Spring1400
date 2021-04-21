@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.flex": "jflex",
+        "*.cup": "cup",
+        "string.h": "c",
+        "stdio.h": "c"
+    }
+}
