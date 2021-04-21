@@ -1,4 +1,5 @@
-#include "threads/thread.h"
+#include "thread.h"
+#include "mm_alloc.h"
 #include <debug.h>
 #include <stddef.h>
 #include <random.h>
@@ -19,6 +20,10 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+
+// For heap
+s_block_ptr HeadPtr=NULL;
+void *BrkPtr=NULL;
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -470,6 +475,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  // Initiallization of Heap
+  t->heap = &t->magic + sizeof(unsigned);
+  HeadPtr = t->heap;
+  BrkPtr = &t->heap;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -481,9 +491,94 @@ alloc_frame (struct thread *t, size_t size)
   ASSERT (is_thread (t));
   ASSERT (size % sizeof (uint32_t) == 0);
 
+  // Check new stack pointer conflict with heap
+  ASSERT (((t->stack - size) - t->heap) > 0);
+
   t->stack -= size;
   return t->stack;
 }
+
+
+void* mm_malloc(size_t size){
+	
+	s_block_ptr head=HeadPtr;
+	s_block_ptr prev=NULL;
+	
+	while(head){
+		if(head->free==1 && head->size >=size){
+			mm_realloc(head->block,size);
+			head->free=0;
+			return head->block;
+			
+		}else{
+			prev=head;
+			head=head->next;
+		}
+	}
+	
+	//If we exited the loop, we know that we didnt find a suitable space, and so we need to move the break pt.
+	head=extend_heap(prev,size);
+	if(!head){
+		exit(EXIT_FAILURE);
+	}
+	return head->block;
+	
+}
+
+/*mm_realloc:
+ * If want bigger space then acts the same as malloc but copies over contents of old block to a new, more
+ * approproate block.
+ * If smaller block is needed but current block isnt big enough to split into two viable blocks, then nothing is
+ * done.
+ * If current clock is big enough then the block is split accordingly
+ */
+void* mm_realloc(void* ptr, size_t size){
+		s_block_ptr curr=get_block(ptr);
+		
+		if(curr){
+			if(size > curr->size){
+				void* p=mm_malloc(size);
+				s_block_ptr newP=get_block(p);
+				if(newP){
+					p=mem_copy(curr,newP);
+					mm_free(curr->block);
+					return p;
+				}
+				
+				
+					
+			}else if(size < curr->size){
+				split_block(curr,size);
+				return curr->block;
+			}else{
+				return curr->block;
+			}
+		}
+		return NULL;
+}
+
+void mm_free(void* ptr){
+	s_block_ptr curr=get_block(ptr);
+	
+	if(curr){
+		if(curr->next==NULL){
+			
+			if(curr->prev){
+				
+				(curr->prev)->next=NULL;
+			}else{
+				HeadPtr=NULL;
+			}
+			
+			sbrk(-(curr->size + sizeof(s_block)));
+		}else{
+			
+			curr->free=1;
+			fusion(curr);
+		}
+	}
+}
+
 
 /* Chooses and returns the next thread to be scheduled.  Should
    return a thread from the run queue, unless the run queue is
