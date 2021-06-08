@@ -36,11 +36,17 @@ htDestroy(hTree ht)
    if EP is non-null, and sets *OFSP to the byte offset of the
    directory entry if OFSP is non-null.
    otherwise, returns false and ignores EP and OFSP. */
-struct dir_entry
-htSearch(const struct hTree h, const char *name,
+struct bool
+htSearch(const struct hTree ht, const char *name,
         struct dir_entry *ep, off_t *ofsp)
 {
-    //TODO
+    int key;
+
+    e = hash_find (ht->h, &name);
+    if (e == NULL)
+        return NULL
+    key = hash_entry (e, struct dir_entry, char);
+    btSearch(ht->b, key, &ep, &ofsp);
 }
 
 /* Insert a file named NAME to DIR. The file's inode is in sector

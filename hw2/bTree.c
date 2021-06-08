@@ -10,6 +10,8 @@ struct btNode {
     int isLeaf;     /* is this a leaf node? */
     int numKeys;    /* how many keys does this node contain? */
     int keys[MAX_KEYS];
+    struct dir_entries entries[MAX_KEYS];
+    off_t offests[MAX_KEYS];
     struct btNode *kids[MAX_KEYS+1];  /* kids[i] holds nodes < keys[i] */
 };
 
@@ -69,7 +71,8 @@ searchKey(int n, const int *a, int key)
 }
 
 int
-btSearch(bTree b, int key)
+btSearch(bTree b, int key,
+        struct dir_entry *ep, off_t *ofsp)
 {
     int pos;
 
@@ -82,9 +85,11 @@ btSearch(bTree b, int key)
     pos = searchKey(b->numKeys, b->keys, key);
 
     if(pos < b->numKeys && b->keys[pos] == key) {
+        ep = b->entries[pos];
+        ofsp = b->offests[pos];
         return 1;
     } else {
-        return(!b->isLeaf && btSearch(b->kids[pos], key));
+        return(!b->isLeaf && btSearch(b->kids[pos], key, &ep, &ofsp));
     }
 }
 
