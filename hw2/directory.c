@@ -10,7 +10,8 @@
 struct dir 
   {
     struct inode *inode;                /* Backing store. */
-    off_t pos;                          /* Current position. */
+    // off_t pos;                          /* Current position. */
+    struct htree htree;                 /* Hash balanced tree. */
   };
 
 /* A single directory entry. */
@@ -38,7 +39,8 @@ dir_open (struct inode *inode)
   if (inode != NULL && dir != NULL)
     {
       dir->inode = inode;
-      dir->pos = 0;
+      // dir->pos = 0;
+      dir->htree = htCreate();
       return dir;
     }
   else
@@ -98,16 +100,25 @@ lookup (const struct dir *dir, const char *name,
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
-       ofs += sizeof e) 
-    if (e.in_use && !strcmp (name, e.name)) 
-      {
-        if (ep != NULL)
-          *ep = e;
-        if (ofsp != NULL)
-          *ofsp = ofs;
-        return true;
-      }
+  // for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
+  //      ofs += sizeof e) 
+  //   if (e.in_use && !strcmp (name, e.name)) 
+  //     {
+  //       if (ep != NULL)
+  //         *ep = e;
+  //       if (ofsp != NULL)
+  //         *ofsp = ofs;
+  //       return true;
+  //     }
+
+  htSearch(dir->htree, name, &e, &ofs)
+  if (e != NULL){
+    if (ep != NULL)
+      *ep = e;
+    if (ofsp != NULL)
+      *ofsp = ofs;
+    return true;
+  }
   return false;
 }
 
@@ -163,15 +174,19 @@ dir_add (struct dir *dir, const char *name, block_sector_t inode_sector)
      inode_read_at() will only return a short read at end of file.
      Otherwise, we'd need to verify that we didn't get a short
      read due to something intermittent such as low memory. */
-  for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
-       ofs += sizeof e) 
-    if (!e.in_use)
-      break;
+  // for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
+  //      ofs += sizeof e) 
+  //   if (!e.in_use)
+  //     break;
 
   /* Write slot. */
-  e.in_use = true;
-  strlcpy (e.name, name, sizeof e.name);
-  e.inode_sector = inode_sector;
+  // e.in_use = true;
+  // strlcpy (e.name, name, sizeof e.name);
+  // e.inode_sector = inode_sector;
+
+  if (!htInsert(dir->htree, name, inode_sector, &e, &ofs))
+    goto done;
+
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
 
  done:

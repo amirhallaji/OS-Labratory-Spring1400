@@ -8,10 +8,7 @@ hTree htCreate(void);
 void htDestroy(hTree t);
 
 /* return nonzero if key is present in tree */
-int htSearch(hTree t, int key);
+int htSearch(const struct hTree t, const char *name, struct dir_entry *ep, off_t *ofsp);
 
 /* insert a new element into a tree */
-void htInsert(hTree t, int key);
-
-/* print all keys of the tree in order */
-void htPrintKeys(hTree t);
+void htInsert(hTree h, int key, block_sector_t inode_sector, struct dir_entry *ep, off_t *ofsp);
