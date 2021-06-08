@@ -98,7 +98,8 @@ btSearch(bTree b, int key,
 /* and puts the median in *median */
 /* else returns 0 */
 static bTree
-btInsertInternal(bTree b, int key, int *median)
+btInsertInternal(bTree b, int key, int *median, 
+            struct dir_entry *ep, off_t *ofsp)
 {
     int pos;
     int mid;
@@ -116,20 +117,26 @@ btInsertInternal(bTree b, int key, int *median)
         /* everybody above pos moves up one space */
         memmove(&b->keys[pos+1], &b->keys[pos], sizeof(*(b->keys)) * (b->numKeys - pos));
         b->keys[pos] = key;
+        b->entries[pos] = ep;
+        b->offests[pos] = ofsp;
         b->numKeys++;
 
     } else {
 
         /* insert in child */
-        b2 = btInsertInternal(b->kids[pos], key, &mid);
+        b2 = btInsertInternal(b->kids[pos], key, &mid, &ep, &ofsp);
         
         /* maybe insert a new key in b */
         if(b2) {
 
             /* every key above pos moves up one space */
             memmove(&b->keys[pos+1], &b->keys[pos], sizeof(*(b->keys)) * (b->numKeys - pos));
+            memmove(b->entries[pos+1], &b->entries[pos], sizeof(*(b->entries)) * b->numKeys - pos);
+            memmove(b->offests[pos+1], &b->offests[pos], sizeof(*(b->offests)) * b->numKeys - pos);
             /* new kid goes in pos + 1*/
             memmove(&b->kids[pos+2], &b->kids[pos+1], sizeof(*(b->keys)) * (b->numKeys - pos));
+            memmove(b->entries[pos+2], &b->entries[pos+1], sizeof(*(b->entries)) * b->numKeys - pos);
+            memmove(b->offests[pos+2], &b->offests[pos+1], sizeof(*(b->offests)) * b->numKeys - pos);
 
             b->keys[pos] = mid;
             b->kids[pos+1] = b2;
@@ -161,8 +168,12 @@ btInsertInternal(bTree b, int key, int *median)
         b2->isLeaf = b->isLeaf;
 
         memmove(b2->keys, &b->keys[mid+1], sizeof(*(b->keys)) * b2->numKeys);
+        memmove(b2->entries, &b->entries[mid+1], sizeof(*(b->entries)) * b2->numKeys);
+        memmove(b2->offests, &b->offests[mid+1], sizeof(*(b->offests)) * b2->numKeys);
         if(!b->isLeaf) {
             memmove(b2->kids, &b->kids[mid+1], sizeof(*(b->kids)) * (b2->numKeys + 1));
+            memmove(b2->entries, &b->entries[mid+1], sizeof(*(b->entries)) * b2->numKeys + 1);
+            memmove(b2->offests, &b->offests[mid+1], sizeof(*(b->offests)) * b2->numKeys + 1);
         }
 
         b->numKeys = mid;
@@ -174,13 +185,14 @@ btInsertInternal(bTree b, int key, int *median)
 }
 
 void
-btInsert(bTree b, int key)
+btInsert(bTree b, int key,
+        struct dir_entry *ep, off_t *ofsp)
 {
     bTree b1;   /* new left child */
     bTree b2;   /* new right child */
     int median;
 
-    b2 = btInsertInternal(b, key, &median);
+    b2 = btInsertInternal(b, key, &median, &ep, &ofsp);
 
     if(b2) {
         /* basic issue here is that we are at the root */

@@ -54,8 +54,18 @@ htSearch(const struct hTree ht, const char *name,
    Returns true if successful, false on failure.
    Fails if a disk or memory error occurs. */
 void
-htInsert(hTree h, int key, block_sector_t inode_sector,
+htInsert(const struct hTree ht, const char *name, block_sector_t inode_sector,
         struct dir_entry *ep, off_t *ofsp)
 {
-    //TODO
+    struct dir_entry e;
+    int key;
+
+    if (hash_insert (ht->h, &name) == NULL)
+        return;
+    
+    btInsert(ht->b, key, &ep, &ofsp)        // panic if sth goes wrong
+
+    e.in_use = true;
+    strlcpy (e.name, name, sizeof e.name);
+    e.inode_sector = inode_sector;
 }
