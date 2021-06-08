@@ -222,6 +222,7 @@ dir_remove (struct dir *dir, const char *name)
     goto done;
 
   /* Remove inode. */
+  htDestroy(dir->htree);      // Destroy hTree
   inode_remove (inode);
   success = true;
 
