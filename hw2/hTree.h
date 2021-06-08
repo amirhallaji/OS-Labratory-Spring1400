@@ -1,17 +1,17 @@
-/* implementation of a B-tree */
-typedef struct btNode *bTree;
+/* implementation of a H-tree */
+typedef struct htNode *hTree;
 
 /* create a new empty tree */
-bTree btCreate(void);
+hTree htCreate(void);
 
 /* free a tree */
-void btDestroy(bTree t);
+void htDestroy(hTree t);
 
 /* return nonzero if key is present in tree */
-int btSearch(bTree t, int key);
+int htSearch(hTree t, int key);
 
 /* insert a new element into a tree */
-void btInsert(bTree t, int key);
+void htInsert(hTree t, int key);
 
 /* print all keys of the tree in order */
-void btPrintKeys(bTree t);
+void htPrintKeys(hTree t);

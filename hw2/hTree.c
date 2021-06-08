@@ -3,43 +3,43 @@
 #include <assert.h>
 #include <string.h>
 
-#include "bTree.h"
+#include "hTree.h"
 
 #define MAX_KEYS (1024)
 
-struct btNode {
+struct htNode {
     int isLeaf;     /* is this a leaf node? */
     int numKeys;    /* how many keys does this node contain? */
     int keys[MAX_KEYS];
-    struct btNode *kids[MAX_KEYS+1];  /* kids[i] holds nodes < keys[i] */
+    struct htNode *kids[MAX_KEYS+1];  /* kids[i] holds nodes < keys[i] */
 };
 
-bTree
-btCreate(void)
+hTree
+htCreate(void)
 {
-    bTree b;
+    hTree h;
 
-    b = malloc(sizeof(*b));
-    assert(b);
+    h = malloc(sizeof(*h));
+    assert(h);
 
-    b->isLeaf = 1;
-    b->numKeys = 0;
+    h->isLeaf = 1;
+    h->numKeys = 0;
 
-    return b;
+    return h;
 }
 
 void
-btDestroy(bTree b)
+htDestroy(hTree h)
 {
     int i;
 
-    if(!b->isLeaf) {
-        for(i = 0; i < b->numKeys + 1; i++) {
-            btDestroy(b->kids[i]);
+    if(!h->isLeaf) {
+        for(i = 0; i < h->numKeys + 1; i++) {
+            htDestroy(h->kids[i]);
         }
     }
 
-    free(b);
+    free(h);
 }
 
 /* return smallest index i in sorted array such that key <= a[i] */
@@ -70,22 +70,22 @@ searchKey(int n, const int *a, int key)
 }
 
 int
-btSearch(bTree b, int key)
+htSearch(hTree h, int key)
 {
     int pos;
 
     /* have to check for empty tree */
-    if(b->numKeys == 0) {
+    if(h->numKeys == 0) {
         return 0;
     }
 
     /* look for smallest position that key fits below */
-    pos = searchKey(b->numKeys, b->keys, key);
+    pos = searchKey(h->numKeys, h->keys, key);
 
-    if(pos < b->numKeys && b->keys[pos] == key) {
+    if(pos < h->numKeys && h->keys[pos] == key) {
         return 1;
     } else {
-        return(!b->isLeaf && btSearch(b->kids[pos], key));
+        return(!h->isLeaf && htSearch(h->kids[pos], key));
     }
 }
 
@@ -93,52 +93,52 @@ btSearch(bTree b, int key)
 /* returns new right sibling if the node splits */
 /* and puts the median in *median */
 /* else returns 0 */
-static bTree
-btInsertInternal(bTree b, int key, int *median)
+static hTree
+htInsertInternal(hTree h, int key, int *median)
 {
     int pos;
     int mid;
-    bTree b2;
+    hTree h2;
 
-    pos = searchKey(b->numKeys, b->keys, key);
+    pos = searchKey(h->numKeys, h->keys, key);
 
-    if(pos < b->numKeys && b->keys[pos] == key) {
+    if(pos < h->numKeys && h->keys[pos] == key) {
         /* nothing to do */
         return 0;
     }
 
-    if(b->isLeaf) {
+    if(h->isLeaf) {
 
         /* everybody above pos moves up one space */
-        memmove(&b->keys[pos+1], &b->keys[pos], sizeof(*(b->keys)) * (b->numKeys - pos));
-        b->keys[pos] = key;
-        b->numKeys++;
+        memmove(&h->keys[pos+1], &h->keys[pos], sizeof(*(h->keys)) * (h->numKeys - pos));
+        h->keys[pos] = key;
+        h->numKeys++;
 
     } else {
 
         /* insert in child */
-        b2 = btInsertInternal(b->kids[pos], key, &mid);
+        h2 = htInsertInternal(h->kids[pos], key, &mid);
         
         /* maybe insert a new key in b */
-        if(b2) {
+        if(h2) {
 
             /* every key above pos moves up one space */
-            memmove(&b->keys[pos+1], &b->keys[pos], sizeof(*(b->keys)) * (b->numKeys - pos));
+            memmove(&h->keys[pos+1], &h->keys[pos], sizeof(*(h->keys)) * (h->numKeys - pos));
             /* new kid goes in pos + 1*/
-            memmove(&b->kids[pos+2], &b->kids[pos+1], sizeof(*(b->keys)) * (b->numKeys - pos));
+            memmove(&h->kids[pos+2], &h->kids[pos+1], sizeof(*(h->keys)) * (h->numKeys - pos));
 
-            b->keys[pos] = mid;
-            b->kids[pos+1] = b2;
-            b->numKeys++;
+            h->keys[pos] = mid;
+            h->kids[pos+1] = h2;
+            h->numKeys++;
         }
     }
 
     /* we waste a tiny bit of space by splitting now
      * instead of on next insert */
-    if(b->numKeys >= MAX_KEYS) {
-        mid = b->numKeys/2;
+    if(h->numKeys >= MAX_KEYS) {
+        mid = h->numKeys/2;
 
-        *median = b->keys[mid];
+        *median = h->keys[mid];
 
         /* make a new node for keys > median */
         /* picture is:
@@ -151,48 +151,48 @@ btInsertInternal(bTree b, int key, int *median)
          *      3        7
          *      A B      C D
          */
-        b2 = malloc(sizeof(*b2));
+        h2 = malloc(sizeof(*h2));
 
-        b2->numKeys = b->numKeys - mid - 1;
-        b2->isLeaf = b->isLeaf;
+        h2->numKeys = h->numKeys - mid - 1;
+        h2->isLeaf = h->isLeaf;
 
-        memmove(b2->keys, &b->keys[mid+1], sizeof(*(b->keys)) * b2->numKeys);
-        if(!b->isLeaf) {
-            memmove(b2->kids, &b->kids[mid+1], sizeof(*(b->kids)) * (b2->numKeys + 1));
+        memmove(h2->keys, &h->keys[mid+1], sizeof(*(h->keys)) * h2->numKeys);
+        if(!h->isLeaf) {
+            memmove(h2->kids, &h->kids[mid+1], sizeof(*(h->kids)) * (h2->numKeys + 1));
         }
 
-        b->numKeys = mid;
+        h->numKeys = mid;
 
-        return b2;
+        return h2;
     } else {
         return 0;
     }
 }
 
 void
-btInsert(bTree b, int key)
+htInsert(hTree h, int key)
 {
-    bTree b1;   /* new left child */
-    bTree b2;   /* new right child */
+    hTree h1;   /* new left child */
+    hTree h2;   /* new right child */
     int median;
 
-    b2 = btInsertInternal(b, key, &median);
+    h2 = htInsertInternal(h, key, &median);
 
-    if(b2) {
+    if(h2) {
         /* basic issue here is that we are at the root */
         /* so if we split, we have to make a new root */
 
-        b1 = malloc(sizeof(*b1));
-        assert(b1);
+        h1 = malloc(sizeof(*h1));
+        assert(h1);
 
-        /* copy root to b1 */
-        memmove(b1, b, sizeof(*b));
+        /* copy root to h1 */
+        memmove(h1, h, sizeof(*h));
 
-        /* make root point to b1 and b2 */
-        b->numKeys = 1;
-        b->isLeaf = 0;
-        b->keys[0] = median;
-        b->kids[0] = b1;
-        b->kids[1] = b2;
+        /* make root point to h1 and h2 */
+        h->numKeys = 1;
+        h->isLeaf = 0;
+        h->keys[0] = median;
+        h->kids[0] = h1;
+        h->kids[1] = h2;
     }
 }
