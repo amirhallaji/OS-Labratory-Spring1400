@@ -231,6 +231,26 @@ dir_remove (struct dir *dir, const char *name)
   return success;
 }
 
+/* Returns a hash value for the dir that E refers to. */
+unsigned
+dir_hash (const struct hash_elem *e, void *aux UNUSED)
+{
+  const struct dir *d = hash_entry (e, struct dir, hash_elem);
+  return ((uintptr_t) d->addr) >> NAME_MAX;
+}
+
+/* Returns true if dir A precedes dir B. */
+bool
+dir_less (const struct hash_elem *a_, const struct hash_elem *b_,
+           void *aux UNUSED)
+{
+  const struct dir *a = hash_entry (a_, struct dir, hash_elem);
+  const struct dir *b = hash_entry (b_, struct dir, hash_elem);
+
+  return a->addr < b->addr;
+}
+
+
 /* Reads the next directory entry in DIR and stores the name in
    NAME.  Returns true if successful, false if the directory
    contains no more entries. */

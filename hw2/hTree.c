@@ -19,7 +19,7 @@ htCreate(void)
     hTree ht;
 
     ht->b = btCreate();
-    ht->h = hash_init();
+    hash_init(ht->h, dir_hash, dir_less, NULL);
 
     return ht;
 }
